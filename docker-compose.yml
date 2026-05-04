@@ -9,4 +9,64 @@ services:
       PORT: 3000
     ports:
       - "3000:3000"
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+    networks:
+      - app-network
     restart: unless-stopped
+
+  fluent-bit:
+    image: fluent/fluent-bit:5.0.4
+    container_name: devops-test-fluent-bit
+    command: /fluent-bit/bin/fluent-bit -c /fluent-bit/etc/fluent-bit.conf
+    volumes:
+      - ./observability/fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
+      - ./observability/fluent-bit/parsers_app.conf:/fluent-bit/etc/parsers_app.conf:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    depends_on:
+      - loki
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:3.7.1
+    container_name: devops-test-loki
+    command: -config.file=/etc/loki/local-config.yaml
+    ports:
+      - "3100:3100"
+    volumes:
+      - loki-data:/loki
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  
+
+  grafana:
+    image: grafana/grafana:13.0.1
+    container_name: devops-test-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - loki
+    networks:
+      - app-network
+    restart: unless-stopped
+
+volumes:
+  loki-data:
+  grafana-data:
+
+networks:
+  app-network:
+    driver: bridge
