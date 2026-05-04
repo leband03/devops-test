@@ -12,10 +12,15 @@ COPY . .
 
 RUN pnpm run build
 
+RUN addgroup -S group && adduser -S user -G group
+
+
 ENV NODE_ENV=production
 ENV PORT=3000
 
 EXPOSE 3000
+
+USER user
 
 CMD ["node", "dist/main"]
 
