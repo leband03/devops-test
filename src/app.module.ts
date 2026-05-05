@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { hostname } from 'node:os';
 
 const isDev = process.env.NODE_ENV !== 'production';
 
@@ -24,6 +25,8 @@ const isDev = process.env.NODE_ENV !== 'production';
           service: 'devops-test',
           env: process.env.NODE_ENV ?? 'development',
           version: process.env.APP_VERSION ?? '0.0.1',
+          pid: process.pid,
+          hostname: hostname(),
         },
         redact: {
           paths: [
