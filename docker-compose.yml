@@ -12,11 +12,22 @@ services:
     logging:
       driver: json-file
       options:
-        max-size: "5m"
+        max-size: "10m"
         max-file: "3"
     networks:
       - app-network
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,noexec,nosuid,nodev
+    pids_limit: 128
+    mem_limit: 512m
+    mem_reservation: 256m
+    cpus: "0.50"
 
   fluent-bit:
     image: fluent/fluent-bit:5.0.4
@@ -26,23 +37,57 @@ services:
       - ./observability/fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
       - ./observability/fluent-bit/parsers_app.conf:/fluent-bit/etc/parsers_app.conf:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - fluent-bit-state:/fluent-bit/state
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       - loki
     networks:
       - app-network
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,noexec,nosuid,nodev
+    pids_limit: 64
+    mem_limit: 256m
+    mem_reservation: 64m
+    cpus: "0.25"
 
   loki:
     image: grafana/loki:3.7.1
     container_name: devops-test-loki
-    command: -config.file=/etc/loki/local-config.yaml
-    ports:
-      - "3100:3100"
+    command: -config.file=/etc/loki/loki-config.yml
+    expose:
+      - "3100"
     volumes:
       - loki-data:/loki
+      - ./observability/loki/loki-config.yml:/etc/loki/loki-config.yml:ro
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     networks:
       - app-network
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,noexec,nosuid,nodev
+    pids_limit: 256
+    mem_limit: 1g
+    mem_reservation: 512m
+    cpus: "1.00"
 
   
 
@@ -57,15 +102,32 @@ services:
     volumes:
       - grafana-data:/var/lib/grafana
       - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       - loki
     networks:
       - app-network
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,noexec,nosuid,nodev
+    pids_limit: 256
+    mem_limit: 512m
+    mem_reservation: 256m
+    cpus: "0.50"
 
 volumes:
   loki-data:
   grafana-data:
+  fluent-bit-state:
 
 networks:
   app-network:
